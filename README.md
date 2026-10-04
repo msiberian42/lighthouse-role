@@ -1,1 +1,1 @@
-# lighthouse-role
+# vector-role
