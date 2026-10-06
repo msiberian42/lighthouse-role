@@ -44,12 +44,18 @@
     target: "{{ lighthouse_install_dir }}(/.*)?"
     setype: httpd_sys_content_t
     state: present
+  when:
+    - ansible_selinux is defined
+    - ansible_selinux.status == "enabled"
 
 - name: Restore SELinux context
   ansible.builtin.command:
     cmd: "restorecon -Rv {{ lighthouse_install_dir }}"
   register: restorecon_result
   changed_when: "'restorecon reset' in restorecon_result.stdout"
+  when:
+    - ansible_selinux is defined
+    - ansible_selinux.status == "enabled"
 
 - name: Deploy nginx configuration
   ansible.builtin.template:

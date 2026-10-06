@@ -1,6 +1,7 @@
 ---
 galaxy_info:
   author: pavel
+  role_name: lighthouse_role
   description: Install and configure Vector
   min_ansible_version: "2.20.1"
 
