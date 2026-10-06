@@ -1,0 +1,57 @@
+---
+# Purpose: assert that the instance really ended up in the expected state.
+# Molecule calls this playbook with `molecule verify`.
+- name: Verify
+  hosts: instance
+  gather_facts: false
+  tasks:
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+
+    - name: Check Lighthouse files
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /var/www/lighthouse/index.html
+        - /etc/nginx/conf.d/lighthouse.conf
+      register: lighthouse_files
+
+    - name: Assert Lighthouse files exist
+      ansible.builtin.assert:
+        that:
+          - lighthouse_files.results | length == 2
+          - lighthouse_files.results | map(attribute='stat.exists') | min
+        fail_msg: "Lighthouse index or nginx configuration is missing"
+
+    - name: Read nginx configuration
+      ansible.builtin.slurp:
+        src: /etc/nginx/conf.d/lighthouse.conf
+      register: lighthouse_nginx_config
+
+    - name: Assert nginx configuration serves Lighthouse
+      ansible.builtin.assert:
+        that:
+          - "'listen 80' in (lighthouse_nginx_config.content | b64decode)"
+          - "'root /var/www/lighthouse;' in (lighthouse_nginx_config.content | b64decode)"
+          - "'index index.html;' in (lighthouse_nginx_config.content | b64decode)"
+
+    - name: Assert nginx is enabled and running
+      ansible.builtin.assert:
+        that:
+          - "'nginx.service' in ansible_facts.services"
+          - "ansible_facts.services['nginx.service'].state == 'running'"
+          - "ansible_facts.services['nginx.service'].status == 'enabled'"
+        fail_msg: "nginx must be enabled and running"
+
+    - name: Check Lighthouse responds over HTTP
+      ansible.builtin.uri:
+        url: http://127.0.0.1/
+        status_code: 200
+        return_content: true
+      register: lighthouse_http
+
+    - name: Assert HTTP response contains Lighthouse page
+      ansible.builtin.assert:
+        that:
+          - lighthouse_http.status == 200
+          - lighthouse_http.content | length > 0

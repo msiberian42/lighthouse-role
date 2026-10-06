@@ -49,3 +49,13 @@ ansible-playbook -i inventory.ini site.yml
 ## Настройка nginx
 
 Роль устанавливает `/etc/nginx/conf.d/lighthouse.conf`: nginx слушает порт 80 как сервер по умолчанию и использует `lighthouse_install_dir` в качестве корня сайта. Необходимо убедиться, что порт 80 доступен клиентам и не занят другой конфигурацией nginx.
+
+## Проверка через Molecule и Podman
+
+Лёгкий сценарий `podman` запускается командой:
+
+```sh
+molecule test -s podman --destroy always
+```
+
+Для него требуются установленные `molecule-podman` и Podman с поддержкой запуска контейнеров с systemd. Сценарий использует Rocky Linux 9 и проверяет установленные файлы, конфигурацию nginx и ответ HTTP.
